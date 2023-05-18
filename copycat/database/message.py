@@ -8,6 +8,7 @@ class Message(Model):
     role = CharField()
     content = TextField()
     thread_ts = CharField()
+    user_id_to_imitate = CharField()
 
     class Meta:
         database = db

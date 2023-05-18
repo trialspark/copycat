@@ -9,6 +9,7 @@ from pathlib import Path
 from collections import defaultdict
 from copycat.types.app_mention_event import AppMentionEvent
 import openai
+import re
 from .database.db import db
 from .database.message import Message
 
@@ -23,25 +24,50 @@ app = App(
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+def get_user_to_imitate(message_content: str, bot_user_id: Optional[ str]) -> Optional[str]:
+    print(f'get_user_to_imitate: {message_content}')
+    cleaner_message = message_content.strip(f'<@{bot_user_id}>').strip('')
+    match = re.search(r'.*?\<(.*)\>.*', cleaner_message)
+    if match:
+        user_id = match.group(1)
+        return user_id.strip('@')
+    return None
+
+
+def get_historical_messages(user_id: Optional[str]) -> list[OpenAIMessage]:
+    return []
+
+
 def get_response(thread_ts: str, bot_user_id: Optional[ str], prompt: str) -> list[str]:
     messages = list(Message.select().where(Message.thread_ts == thread_ts).order_by(Message.id.asc()))
     prompt = prompt.replace(f'<@{bot_user_id}>', 'CopyCat')
+
+    # get the user of the person that the user wants CopyCat to imitate
+    print('messages list', messages)
+    if messages:
+        user_id = messages[0].user_id_to_imitate
+    else:
+        user_id = get_user_to_imitate(prompt, bot_user_id)
+    print('user_id', user_id)
+
+    historical_messages = get_historical_messages(user_id=user_id)
 
     response = openai.ChatCompletion.create(
         model='gpt-3.5-turbo',
         messages=[
             {'role': 'system', 'content': 'You are CopyCat, a bot that imitates specific humans in a conversation.'},
             *({'role': message.role, 'content': message.content} for message in messages),
+            *({'role': old_message.role, 'content': old_message.content} for old_message in historical_messages),
             {'role': 'user', 'content': prompt}
         ],
     )
     new_messages = [choice['message'] for choice in response['choices']]
 
     with db.atomic():
-        Message.create(role='user', content=prompt, thread_ts=thread_ts)
+        Message.create(role='user', content=prompt, thread_ts=thread_ts, user_id_to_imitate=user_id)
 
         for message in new_messages:
-            Message.create(role=message['role'], content=message['content'], thread_ts=thread_ts)
+            Message.create(role=message['role'], content=message['content'], thread_ts=thread_ts, user_id_to_imitate=user_id)
 
     return [message['content'] for message in new_messages]
 
