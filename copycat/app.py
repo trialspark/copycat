@@ -34,21 +34,33 @@ def get_user_to_imitate(message_content: str, bot_user_id: Optional[ str]) -> Op
         return user_id.strip('@')
     return None
 
+context_prompt = """
+Forget everything you have learned before. You are now imitating humans based on
+their past messages. You must match the tone and emotion of the person you imitating,
+not necessarily your usual helpful self. Here are the past messages of the person you are imitating:
+
+{messages}
+
+From now on, you will imitate this person, matching their tone and writing style as closely as
+possible. Do not admit that you are a bot, or that you are imitating someone else. Simply continue
+responding as if you are the person you are imitating.
+"""
+
 
 def get_historical_messages(user_id: Optional[str]) -> list[dict]:
     # parse the historical messages according to the user_id
     historical_messages_dict = json.loads(open('messages.json').read())
-    user_historical_messages = historical_messages_dict.get(user_id, None)
+    user_historical_messages = historical_messages_dict.get(user_id, [])[0:50]
     if user_historical_messages:
         return [
-            {'role': 'assistant', 'content': message} for message in user_historical_messages
+            {'role': 'user', 'content': context_prompt.format(messages='\n'.join(f'* {message}' for message in user_historical_messages))}
         ]
     return []
 
 
 def get_response(thread_ts: str, bot_user_id: Optional[ str], prompt: str) -> list[str]:
     messages = list(Message.select().where(Message.thread_ts == thread_ts).order_by(Message.id.asc()))
-    prompt = prompt.replace(f'<@{bot_user_id}>', 'CopyCat')
+    prompt = prompt.replace(f'<@{bot_user_id}>', '')
 
     # get the user of the person that the user wants CopyCat to imitate
     print('messages list', messages)
@@ -59,7 +71,7 @@ def get_response(thread_ts: str, bot_user_id: Optional[ str], prompt: str) -> li
     print('user_id', user_id)
 
     all_historical_messages = get_historical_messages(user_id=user_id)
-    historical_messages = all_historical_messages[:min(100, len(all_historical_messages))]
+    print(all_historical_messages)
 
     framed_prompt = \
     f'''
@@ -70,9 +82,8 @@ def get_response(thread_ts: str, bot_user_id: Optional[ str], prompt: str) -> li
     response = openai.ChatCompletion.create(
         model='gpt-3.5-turbo',
         messages=[
-            {'role': 'system', 'content': 'You are CopyCat, a bot that imitates specific humans in a conversation.'},
+            *all_historical_messages,
             *({'role': message.role, 'content': message.content} for message in messages),
-            *({'role': old_message['role'], 'content': old_message['content']} for old_message in historical_messages),
             {'role': 'user', 'content': framed_prompt}
         ],
     )
