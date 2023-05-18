@@ -38,6 +38,8 @@ def get_response(thread_ts: str, bot_user_id: Optional[ str], prompt: str) -> li
     new_messages = [choice['message'] for choice in response['choices']]
 
     with db.atomic():
+        Message.create(role='user', content=prompt, thread_ts=thread_ts)
+
         for message in new_messages:
             Message.create(role=message['role'], content=message['content'], thread_ts=thread_ts)
 
