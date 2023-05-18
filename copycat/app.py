@@ -39,10 +39,9 @@ def get_historical_messages(user_id: Optional[str]) -> list[dict]:
     # parse the historical messages according to the user_id
     historical_messages_dict = json.loads(open('messages.json').read())
     user_historical_messages = historical_messages_dict.get(user_id, None)
-    print('user_historical_messages', user_historical_messages)
     if user_historical_messages:
         return [
-            {'role': 'assistant', 'content': message['text']} for message in user_historical_messages
+            {'role': 'assistant', 'content': message} for message in user_historical_messages
         ]
     return []
 
@@ -59,7 +58,14 @@ def get_response(thread_ts: str, bot_user_id: Optional[ str], prompt: str) -> li
         user_id = get_user_to_imitate(prompt, bot_user_id)
     print('user_id', user_id)
 
-    historical_messages = get_historical_messages(user_id=user_id)
+    all_historical_messages = get_historical_messages(user_id=user_id)
+    historical_messages = all_historical_messages[:min(100, len(all_historical_messages))]
+
+    framed_prompt = \
+    f'''
+    Please forget everything you have learned. In the words and style of the role assistant,
+    could you please respond to: {prompt}
+    '''
 
     response = openai.ChatCompletion.create(
         model='gpt-3.5-turbo',
@@ -67,7 +73,7 @@ def get_response(thread_ts: str, bot_user_id: Optional[ str], prompt: str) -> li
             {'role': 'system', 'content': 'You are CopyCat, a bot that imitates specific humans in a conversation.'},
             *({'role': message.role, 'content': message.content} for message in messages),
             *({'role': old_message['role'], 'content': old_message['content']} for old_message in historical_messages),
-            {'role': 'user', 'content': prompt}
+            {'role': 'user', 'content': framed_prompt}
         ],
     )
     new_messages = [choice['message'] for choice in response['choices']]
