@@ -24,6 +24,14 @@ Copycat is a Slack bot that imitates people from their slack message history.
    poetry run start
    ```
 
+5. Start ngrok
+
+   ```bash
+   ngrok http 3000
+   ```
+
+6. Update [Event Subscriptions URL](https://api.slack.com/apps/A05940MD2FJ/event-subscriptions?) to point to `<your-ngrok-url>/slack/events
+
 ## Developing
 
 Copycat uses [mypy](http://mypy-lang.org/) for type checking and [yapf](https://readthedocs.org/projects/yapf/) for code formatting.
