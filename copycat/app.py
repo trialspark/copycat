@@ -8,6 +8,7 @@ from copycat.types.message import OpenAIMessage
 from pathlib import Path
 from collections import defaultdict
 from copycat.types.app_mention_event import AppMentionEvent
+import json
 import openai
 import re
 from .database.db import db
@@ -34,7 +35,15 @@ def get_user_to_imitate(message_content: str, bot_user_id: Optional[ str]) -> Op
     return None
 
 
-def get_historical_messages(user_id: Optional[str]) -> list[OpenAIMessage]:
+def get_historical_messages(user_id: Optional[str]) -> list[dict]:
+    # parse the historical messages according to the user_id
+    historical_messages_dict = json.loads(open('historical_messages.json').read())
+    user_historical_messages = historical_messages_dict.get(user_id, None)
+    print('user_historical_messages', user_historical_messages)
+    if user_historical_messages:
+        return [
+            {'role': 'assistant', 'content': message['text']} for message in user_historical_messages
+        ]
     return []
 
 
@@ -57,7 +66,7 @@ def get_response(thread_ts: str, bot_user_id: Optional[ str], prompt: str) -> li
         messages=[
             {'role': 'system', 'content': 'You are CopyCat, a bot that imitates specific humans in a conversation.'},
             *({'role': message.role, 'content': message.content} for message in messages),
-            *({'role': old_message.role, 'content': old_message.content} for old_message in historical_messages),
+            *({'role': old_message['role'], 'content': old_message['content']} for old_message in historical_messages),
             {'role': 'user', 'content': prompt}
         ],
     )
