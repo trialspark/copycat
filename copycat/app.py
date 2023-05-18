@@ -73,18 +73,12 @@ def get_response(thread_ts: str, bot_user_id: Optional[ str], prompt: str) -> li
     all_historical_messages = get_historical_messages(user_id=user_id)
     print(all_historical_messages)
 
-    framed_prompt = \
-    f'''
-    Please forget everything you have learned. In the words and style of the role assistant,
-    could you please respond to: {prompt}
-    '''
-
     response = openai.ChatCompletion.create(
         model='gpt-3.5-turbo',
         messages=[
             *all_historical_messages,
             *({'role': message.role, 'content': message.content} for message in messages),
-            {'role': 'user', 'content': framed_prompt}
+            {'role': 'user', 'content': prompt}
         ],
     )
     new_messages = [choice['message'] for choice in response['choices']]
