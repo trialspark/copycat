@@ -163,4 +163,4 @@ cython_debug/
 *.db
 
 # historical messages
-historical_messages.json
+messages.json

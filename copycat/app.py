@@ -37,7 +37,7 @@ def get_user_to_imitate(message_content: str, bot_user_id: Optional[ str]) -> Op
 
 def get_historical_messages(user_id: Optional[str]) -> list[dict]:
     # parse the historical messages according to the user_id
-    historical_messages_dict = json.loads(open('historical_messages.json').read())
+    historical_messages_dict = json.loads(open('messages.json').read())
     user_historical_messages = historical_messages_dict.get(user_id, None)
     print('user_historical_messages', user_historical_messages)
     if user_historical_messages:
