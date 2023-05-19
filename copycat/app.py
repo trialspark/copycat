@@ -41,7 +41,7 @@ def get_user_to_imitate(
 context_prompt = """
 Your goal is to create a persona based on a set of sample chat messages, and then generate new messages using that persona.
 Here are the sample messages you should use to create the persona and generate messages: {messages}.
-When you get the prompt "copy me", send back a message that sounds as similar as possible to the sample messages without copying them exactly. Imagine you are
+Send back a message that sounds as similar as possible to the sample messages without copying them exactly. Imagine you are
 this person and that you are sending a random message that you might send at any given time.
 
 Your responses should all meet the following criteria:
@@ -94,9 +94,15 @@ def get_response(thread_ts: str, bot_user_id: Optional[str], prompt: str) -> lis
     print(all_historical_messages)
 
     messages_to_send = [
+        # for now, the entire prompt to GPT is encapsulated in the historical message, which is currently
+        # the most reliable approach to getting CopyCat to imitate a specific user
         *all_historical_messages,
-        *({"role": message.role, "content": message.content} for message in messages),
-        {"role": "user", "content": prompt},
+
+        # uncomment the line below to use the historical messages from the thread
+        # *({"role": message.role, "content": message.content} for message in messages),
+
+        # uncomment the line below to ask GPT to respond to a specific prompt
+        # {"role": "user", "content": prompt},
     ]
     pprint(messages_to_send)
     response = openai.ChatCompletion.create(
