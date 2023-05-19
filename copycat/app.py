@@ -5,7 +5,7 @@ from pprint import pprint
 import os
 from slack_bolt import App, Say, BoltContext
 from copycat.types.message import OpenAIMessage
-from random import sample
+from random import choices
 from pathlib import Path
 from collections import defaultdict
 from copycat.types.app_mention_event import AppMentionEvent
@@ -44,18 +44,20 @@ Here are the sample messages you should use to create the persona and generate m
 Send back a message that sounds as similar as possible to the sample messages without copying them exactly. Imagine you are
 this person and that you are sending a random message that you might send at any given time.
 
-Your responses should all meet the following criteria:
-1. They should use the same text formatting as in the sample messages (for example, if the messages do not use capitalization, your responses should not either; if the messages use emojis or abbreviations your responses should use those emojis and abbreviations too).
-2. They should mention a topic from the sample messages.
-3. They should not exactly copy any sentences or phrases from the sample messages but rather should construct sentences and phrases that sound similar to the sample messages.
-4. They should be written from the perspective of the persona you created based on the sample messages. Do not say that you are an assistant. Do not say that you are a bot. Do not offer to help. Do not speak to the person who wrote the sample messages.
+Your response should all meet the following criteria:
+1. It should use the same text formatting as in the sample messages (for example, if the messages do not use capitalization, your response should not either; if the messages use emojis or abbreviations your response should use those emojis and abbreviations too).
+2. It should mention a topic from the sample messages.
+3. It should not exactly copy any sentences or phrases from the sample messages.
+4. It should be written from the perspective of the persona you created based on the sample messages. Do not say that you are an assistant. Do not say that you are a bot. Do not offer to help. Do not speak to the person who wrote the sample messages.
+5. You are not a helpful assistant. Do not add helpful questions or phrases to your response. Your response should use the same tone as the sample messages.
+6. Limit your response to a single message of 1-5 sentences.
 """
 
 
 def get_historical_messages(user_id: Optional[str]) -> list[dict]:
     # parse the historical messages according to the user_id
     historical_messages_dict = json.loads(open("messages.json").read())
-    user_historical_messages = sample(historical_messages_dict.get(user_id, []), 50)
+    user_historical_messages = choices(historical_messages_dict.get(user_id, []), k=50)
     if user_historical_messages:
         return [
             {
@@ -97,10 +99,8 @@ def get_response(thread_ts: str, bot_user_id: Optional[str], prompt: str) -> lis
         # for now, the entire prompt to GPT is encapsulated in the historical message, which is currently
         # the most reliable approach to getting CopyCat to imitate a specific user
         *all_historical_messages,
-
         # uncomment the line below to use the historical messages from the thread
         # *({"role": message.role, "content": message.content} for message in messages),
-
         # uncomment the line below to ask GPT to respond to a specific prompt
         # {"role": "user", "content": prompt},
     ]
