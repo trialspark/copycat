@@ -32,7 +32,7 @@ Copycat is a Slack bot that imitates people from their slack message history.
 
 6. Update [Event Subscriptions URL](https://api.slack.com/apps/A05940MD2FJ/event-subscriptions?) to point to `<your-ngrok-url>/slack/events`
 
-7. Create a `messages.json` file and copy the contents of the output of <TODO> into the file.
+7. Create a `messages.json` file and copy the contents of the output of a message scraper (see [here](https://github.com/trialspark/copycat/tree/main/message_scrapers)) into the file.
 
 ## Developing
 
